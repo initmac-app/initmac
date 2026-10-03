@@ -71,5 +71,3 @@ def test_dry_run_changes_nothing(tmp_path):
     assert "DRY RUN" in out.stdout
     assert "@@RESULT" in out.stdout
     assert "[dry-run] $ defaults write com.apple.dock autohide -bool true" in out.stdout
-    if "already installed: Terraform" not in out.stdout:
-        assert "tap hashicorp/tap" in out.stdout

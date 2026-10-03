@@ -266,6 +266,9 @@ def test_full_install_only_does_allowed_things(sandbox):
     assert sandbox.requests == []  # no network without opting in to sync
     installed = [c for c in sandbox.commands if c[1:2] == ["install"]]
     assert installed, "expected brew install calls"
+    # Nothing is tapped in the sandbox, so the trusted third-party tap is added before installing.
+    taps = [c[2] for c in sandbox.commands if c[1:2] == ["tap"] and len(c) > 2]
+    assert taps == ["hashicorp/tap"]
 
 
 def test_dry_run_changes_nothing(sandbox):
