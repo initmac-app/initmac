@@ -1,5 +1,9 @@
 # InitMac installer & app catalog
 
+[![CI](https://github.com/initmac-app/initmac/actions/workflows/ci.yml/badge.svg)](https://github.com/initmac-app/initmac/actions/workflows/ci.yml)
+[![Catalog check](https://github.com/initmac-app/initmac/actions/workflows/catalog-check.yml/badge.svg)](https://github.com/initmac-app/initmac/actions/workflows/catalog-check.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 This is the open-source part of **[initmac.in](https://initmac.in)**: the script that runs on
 your Mac, the launcher that downloads and verifies it, and the catalog of apps it can install.
 If you're going to paste a command into Terminal, you should be able to read exactly what it does.
@@ -11,7 +15,8 @@ When you run your InitMac command, it:
 
 1. **Shows you a plan and asks `Continue? [y/N]`** before changing anything.
 2. Installs Xcode Command Line Tools and Homebrew if they're missing.
-3. Installs the apps you picked with Homebrew, skipping ones you already have.
+3. Installs the apps you picked with Homebrew, skipping ones you already have, including apps
+   you installed yourself from the vendor's website (those are left exactly as they are).
 4. Optionally sets your Git name/email and creates an SSH key (only if you don't have one).
 5. Optionally applies the macOS settings you ticked, after backing up your originals.
 6. Optionally (only if you say yes) saves your app list to a private page on initmac.in.

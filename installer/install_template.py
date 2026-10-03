@@ -44,6 +44,7 @@ DEVICE_FILE = HOME / ".initmac" / "device.json"
 BREW_PREFIXES = ["/opt/homebrew", "/usr/local"]
 HOMEBREW_INSTALL = "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 RESTARTABLE = ("Dock", "Finder", "SystemUIServer")
+APPLICATION_DIRS = [Path("/Applications"), HOME / "Applications"]
 
 
 class Installer:
@@ -148,8 +149,11 @@ class Installer:
         will = ["Install Xcode Command Line Tools and Homebrew if they're missing",
                 "(and add one line to ~/.zprofile so Homebrew is on your PATH)"]
         if apps:
-            names = ", ".join(a["name"] for a in apps)
-            will.append("Install %d apps with Homebrew (already-installed ones are skipped): %s" % (len(apps), names))
+            todo, present = self.partition_apps()
+            if todo:
+                will.append("Install %d apps with Homebrew: %s" % (len(todo), ", ".join(a["name"] for a in todo)))
+            if present:
+                will.append("Skip %d apps you already have: %s" % (len(present), ", ".join(a["name"] for a, _ in present)))
         if git.get("enabled"):
             will.append("Set your Git name/email, default branch 'main' and pull behaviour")
             if git.get("ssh_key", True):
@@ -247,6 +251,59 @@ class Installer:
         casks = set(self.output([brew, "list", "--cask", "-1"]).split())
         return formulae, casks
 
+    def cask_app_bundles(self, tokens):
+        """Map cask token -> the .app bundle names it installs (read-only `brew info`)."""
+        brew = self.brew()
+        if not brew or not tokens:
+            return {}
+        raw = self.output([brew, "info", "--json=v2", "--cask"] + list(tokens))
+        try:
+            casks = json.loads(raw).get("casks", []) if raw else []
+        except ValueError:
+            return {}
+        bundles = {}
+        for cask in casks:
+            names = []
+            for artifact in cask.get("artifacts", []):
+                if not isinstance(artifact, dict) or "app" not in artifact:
+                    continue
+                for entry in artifact["app"]:
+                    if isinstance(entry, str):
+                        names.append(entry)
+                    elif isinstance(entry, dict) and entry.get("target"):
+                        names.append(os.path.basename(entry["target"]))
+                if artifact.get("target"):
+                    names.append(os.path.basename(artifact["target"]))
+            bundles[cask.get("token", "")] = sorted(set(n for n in names if n.endswith(".app")))
+        return bundles
+
+    def partition_apps(self):
+        """Split the selection into (to install, [(app, reason) already present]).
+
+        An app counts as present if Homebrew installed it, or (for casks) if its .app bundle
+        already exists in /Applications or ~/Applications, e.g. downloaded from the vendor's site.
+        Those are left exactly as they are.
+        """
+        formulae, casks = self.installed_tokens()
+        todo, present = [], []
+        for app in CONFIG["apps"]:
+            name = app["brew"].split("/")[-1]
+            if name in (formulae if app["type"] == "formula" else casks):
+                present.append((app, "via Homebrew"))
+            else:
+                todo.append(app)
+        cask_todo = [a["brew"] for a in todo if a["type"] == "cask"]
+        bundles = self.cask_app_bundles(cask_todo)
+        still = []
+        for app in todo:
+            found = [b for b in bundles.get(app["brew"], [])
+                     if any((d / b).exists() for d in APPLICATION_DIRS)]
+            if found:
+                present.append((app, "installed outside Homebrew (%s)" % found[0]))
+            else:
+                still.append(app)
+        return still, present
+
     def install_apps(self):
         apps = CONFIG["apps"]
         self.section("Apps (%d selected)" % len(apps))
@@ -264,14 +321,10 @@ class Installer:
             name = app["brew"].split("/")[-1]
             return name in (formulae if app["type"] == "formula" else casks)
 
-        formulae, casks = self.installed_tokens()
-        todo = []
-        for app in apps:
-            if is_installed(app, formulae, casks):
-                self.log("  already installed: " + app["name"])
-                self.result["skipped"].append(app["id"])
-            else:
-                todo.append(app)
+        todo, present = self.partition_apps()
+        for app, reason in present:
+            self.log("  already installed: %s (%s)" % (app["name"], reason))
+            self.result["skipped"].append(app["id"])
         if not todo:
             return
 

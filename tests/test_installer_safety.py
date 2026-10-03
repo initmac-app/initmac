@@ -27,7 +27,7 @@ from installer.render import TEMPLATE, render_installer, render_launcher
 SERVER = "https://initmac.test"
 
 ALLOWED_COMMANDS = {"brew", "git", "ssh-keygen", "ssh-add", "defaults", "killall", "xcode-select", "pbcopy", "gh", "bash"}
-ALLOWED_BREW_SUBCOMMANDS = {"list", "leaves", "update", "tap", "install"}
+ALLOWED_BREW_SUBCOMMANDS = {"list", "leaves", "info", "update", "tap", "install"}
 ALLOWED_KILLALL = {"Dock", "Finder", "SystemUIServer"}
 ALLOWED_DEFAULTS_DOMAINS = {
     "com.apple.dock", "NSGlobalDomain", "com.apple.finder", "com.apple.screencapture",
@@ -179,6 +179,10 @@ class Sandbox:
         self.mod = types.ModuleType("initmac_installer")
         exec(compile(source, "install.py", "exec"), self.mod.__dict__)
         self.mod.BREW_PREFIXES = [str(brew_prefix)]
+        # A fake /Applications with Chrome already there, as if downloaded from google.com.
+        self.applications = tmp_path / "Applications"
+        (self.applications / "Google Chrome.app").mkdir(parents=True)
+        self.mod.APPLICATION_DIRS = [self.applications]
         self.mod.subprocess = self._fake_subprocess()
         monkeypatch.setattr(self.mod.urllib.request, "urlopen", self._fake_urlopen)
         monkeypatch.setattr(self.mod.shutil, "which", lambda name: f"/usr/bin/{name}")
@@ -201,6 +205,10 @@ class Sandbox:
         def run(cmd, **kw):
             record(list(cmd))
             out = "git\nslack\n" if cmd[-2:] in (["--formula", "-1"], ["--cask", "-1"]) else ""
+            if cmd[1:4] == ["info", "--json=v2", "--cask"]:
+                out = json.dumps({"casks": [
+                    {"token": t, "artifacts": [{"app": [t.replace("-", " ").title() + ".app"]}]} for t in cmd[4:]
+                ]})
             return types.SimpleNamespace(stdout=out, returncode=1 if cmd[:2] == ["defaults", "read"] else 0)
 
         return types.SimpleNamespace(Popen=Popen, call=call, run=run, PIPE=-1, STDOUT=-2, DEVNULL=-3)
@@ -276,7 +284,7 @@ def test_dry_run_changes_nothing(sandbox):
     def is_read(c):
         exe = os.path.basename(c[0])
         return (
-            (exe == "brew" and (c[1] == "list" or c == [c[0], "tap"]))
+            (exe == "brew" and (c[1] in ("list", "info") or c == [c[0], "tap"]))
             or c[:2] in (["defaults", "read"], ["xcode-select", "-p"])
             or (exe == "git" and len(c) == 4)  # `git config --global user.name` reads the value
         )
@@ -319,3 +327,14 @@ def test_plan_lists_every_change_and_the_promises(sandbox, capsys):
     assert "Here's what InitMac will do" in out
     assert "It will NOT:" in out and "Delete or overwrite any of your files" in out
     assert "Change 9 macOS settings" in out
+
+
+def test_apps_installed_outside_homebrew_are_left_alone(sandbox, capsys):
+    sandbox.run("--yes")
+    out = capsys.readouterr().out
+    installs = [arg for c in sandbox.commands if c[1:2] == ["install"] for arg in c[2:]]
+    assert "google-chrome" not in installs
+    assert "visual-studio-code" in installs  # not present, so it does get installed
+    assert "already installed: Google Chrome (installed outside Homebrew (Google Chrome.app))" in out
+    assert "Skip 3 apps you already have: Git, Slack, Google Chrome" in out
+    assert (sandbox.applications / "Google Chrome.app").is_dir()  # untouched
