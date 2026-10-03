@@ -1,0 +1,14 @@
+[project]
+name = "initmac"
+version = "0.1.0"
+description = "The open-source installer and app catalog behind initmac.in"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

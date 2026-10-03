@@ -1,0 +1,75 @@
+[
+  {
+    "id": "dock_autohide",
+    "label": "Auto-hide the Dock",
+    "description": "Dock slides away until you move the pointer to the screen edge, freeing screen space.",
+    "writes": [["com.apple.dock", "autohide", "bool", true]],
+    "restart": ["Dock"]
+  },
+  {
+    "id": "dock_size",
+    "label": "Smaller Dock icons",
+    "description": "Sets Dock icon size to 48px.",
+    "writes": [["com.apple.dock", "tilesize", "int", 48]],
+    "restart": ["Dock"]
+  },
+  {
+    "id": "dock_no_recents",
+    "label": "Hide recent apps in the Dock",
+    "description": "Stops the Dock from adding a 'recent applications' section.",
+    "writes": [["com.apple.dock", "show-recents", "bool", false]],
+    "restart": ["Dock"]
+  },
+  {
+    "id": "finder_extensions",
+    "label": "Show all file extensions",
+    "description": "Finder shows .pdf, .zip etc. so you always know the file type.",
+    "writes": [["NSGlobalDomain", "AppleShowAllExtensions", "bool", true]],
+    "restart": ["Finder"]
+  },
+  {
+    "id": "finder_hidden_files",
+    "label": "Show hidden files in Finder",
+    "description": "Dotfiles like .zshrc become visible (toggle anytime with Cmd+Shift+.).",
+    "writes": [["com.apple.finder", "AppleShowAllFiles", "bool", true]],
+    "restart": ["Finder"]
+  },
+  {
+    "id": "finder_bars",
+    "label": "Show Finder path & status bars",
+    "description": "Shows the full folder path and item count at the bottom of Finder windows.",
+    "writes": [
+      ["com.apple.finder", "ShowPathbar", "bool", true],
+      ["com.apple.finder", "ShowStatusBar", "bool", true]
+    ],
+    "restart": ["Finder"]
+  },
+  {
+    "id": "fast_key_repeat",
+    "label": "Fast key repeat",
+    "description": "Held keys repeat sooner and faster. Takes effect after logging out and back in.",
+    "writes": [
+      ["NSGlobalDomain", "KeyRepeat", "int", 2],
+      ["NSGlobalDomain", "InitialKeyRepeat", "int", 15]
+    ],
+    "restart": []
+  },
+  {
+    "id": "screenshots_folder",
+    "label": "Save screenshots to ~/Pictures/Screenshots",
+    "description": "Keeps the Desktop clean by saving screenshots to their own folder.",
+    "writes": [["com.apple.screencapture", "location", "string", "~/Pictures/Screenshots"]],
+    "mkdir": "~/Pictures/Screenshots",
+    "restart": ["SystemUIServer"]
+  },
+  {
+    "id": "tap_to_click",
+    "label": "Tap to click on the trackpad",
+    "description": "A light tap counts as a click, no need to press down.",
+    "writes": [
+      ["com.apple.AppleMultitouchTrackpad", "Clicking", "bool", true],
+      ["com.apple.driver.AppleBluetoothMultitouch.trackpad", "Clicking", "bool", true]
+    ],
+    "restart": []
+  }
+]

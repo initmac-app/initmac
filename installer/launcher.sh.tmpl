@@ -1,0 +1,25 @@
+#!/bin/bash
+# InitMac launcher: installs Xcode Command Line Tools if needed, then downloads your
+# installer, verifies its SHA-256 and runs it. Nothing runs if the check fails.
+# Source: https://github.com/initmac-app/initmac/blob/main/installer/launcher.sh.tmpl
+set -euo pipefail
+expected="{{SHA256}}"
+if ! xcode-select -p >/dev/null 2>&1; then
+  echo "==> Installing Xcode Command Line Tools (needed for Python, git and Homebrew)"
+  xcode-select --install >/dev/null 2>&1 || true
+  echo "    A dialog opened. Click Install; waiting for it to finish..."
+  until xcode-select -p >/dev/null 2>&1; do sleep 10; done
+fi
+script="$(mktemp /tmp/initmac.XXXXXX)"
+trap 'rm -f "$script"' EXIT
+curl -fsSL {{URL}} -o "$script"
+actual="$(shasum -a 256 "$script" | cut -d' ' -f1)"
+if [ "$actual" != "$expected" ]; then
+  echo "InitMac: the downloaded installer doesn't match its fingerprint." >&2
+  echo "  expected $expected" >&2
+  echo "  got      $actual" >&2
+  echo "Not running it. Nothing on your Mac was changed." >&2
+  exit 1
+fi
+echo "==> Installer verified (sha256 ${expected:0:12}…)"
+/usr/bin/python3 "$script" "$@"
