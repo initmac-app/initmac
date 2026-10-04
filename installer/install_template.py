@@ -44,6 +44,7 @@ DEVICE_FILE = HOME / ".initmac" / "device.json"
 BREW_PREFIXES = ["/opt/homebrew", "/usr/local"]
 HOMEBREW_INSTALL = "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
 RESTARTABLE = ("Dock", "Finder", "SystemUIServer")
+REPO_URL = "https://github.com/initmac-app/initmac"
 APPLICATION_DIRS = [Path("/Applications"), HOME / "Applications"]
 
 
@@ -151,17 +152,17 @@ class Installer:
         if apps:
             todo, present = self.partition_apps()
             if todo:
-                will.append("Install %d apps with Homebrew: %s" % (len(todo), ", ".join(a["name"] for a in todo)))
+                will.append("Install %s with Homebrew: %s" % (_count(len(todo), "app"), ", ".join(a["name"] for a in todo)))
             if present:
-                will.append("Skip %d apps you already have: %s" % (len(present), ", ".join(a["name"] for a, _ in present)))
+                will.append("Skip %s you already have: %s" % (_count(len(present), "app"), ", ".join(a["name"] for a, _ in present)))
         if git.get("enabled"):
             will.append("Set your Git name/email, default branch 'main' and pull behaviour")
             if git.get("ssh_key", True):
                 will.append("Create ~/.ssh/id_ed25519 only if you don't have one, and add a github.com entry to ~/.ssh/config")
         if tweaks:
             restart = sorted({r for t in tweaks for r in t.get("restart", [])})
-            will.append("Change %d macOS settings (your originals are backed up first): %s"
-                        % (len(tweaks), ", ".join(t["label"] for t in tweaks)))
+            will.append("Change %s (your originals are backed up first): %s"
+                        % (_count(len(tweaks), "macOS setting"), ", ".join(t["label"] for t in tweaks)))
             if restart:
                 will.append("Restart %s so the settings take effect" % " and ".join(restart))
         wont = [
@@ -567,8 +568,15 @@ class Installer:
         if r["failed"]:
             self.log("Search the log for the failed names to see why: %s" % self.log_path)
         self.log("Log: %s" % self.log_path)
+        if not self.dry_run and not r["failed"] and r["installed"]:
+            self.log("")
+            self.log("Enjoying InitMac? A star on GitHub helps others find it: %s" % REPO_URL)
         # Machine-readable line for the local web app.
         print("@@RESULT " + json.dumps(r), flush=True)
+
+
+def _count(n, word):
+    return "%d %s%s" % (n, word, "" if n == 1 else "s")
 
 
 def _defaults_value(typ, value):

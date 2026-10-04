@@ -1,13 +1,43 @@
-# InitMac installer & app catalog
+<h1 align="center">InitMac</h1>
 
-[![CI](https://github.com/initmac-app/initmac/actions/workflows/ci.yml/badge.svg)](https://github.com/initmac-app/initmac/actions/workflows/ci.yml)
-[![Catalog check](https://github.com/initmac-app/initmac/actions/workflows/catalog-check.yml/badge.svg)](https://github.com/initmac-app/initmac/actions/workflows/catalog-check.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+<p align="center"><b>Set up a new Mac in minutes, and see exactly what runs.</b><br>
+Pick the apps you need (each with a plain-English explanation), then install them all with one Terminal command.</p>
 
-This is the open-source part of **[initmac.in](https://initmac.in)**: the script that runs on
-your Mac, the launcher that downloads and verifies it, and the catalog of apps it can install.
-If you're going to paste a command into Terminal, you should be able to read exactly what it does.
-That's what this repository is for.
+<p align="center">
+  <a href="https://initmac.in"><b>initmac.in</b></a> ·
+  <a href="#verify-the-script-you-downloaded">Verify a script</a> ·
+  <a href="CONTRIBUTING.md">Suggest an app</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/initmac-app/initmac/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/initmac-app/initmac/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/initmac-app/initmac/actions/workflows/catalog-check.yml"><img alt="Catalog check" src="https://github.com/initmac-app/initmac/actions/workflows/catalog-check.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+</p>
+
+<!-- Demo GIF: record a 15–20 s capture of the wizard + Terminal run, save as docs/demo.gif, then replace this comment with:
+<p align="center"><img src="docs/demo.gif" alt="InitMac demo" width="760"></p> -->
+
+## Why InitMac
+
+- **Decide faster.** Tell it your role and what you do day to day; it recommends from a curated
+  catalog of 66 apps (Raycast, Rectangle, OrbStack, VS Code, 1Password, Obsidian…) and explains
+  each one, so you're not googling "best Mac terminal" at midnight.
+- **One command.** `bash <(curl -fsSL https://initmac.in/i/<id>/run.sh)` installs everything with
+  [Homebrew](https://brew.sh), plus optional Git/SSH setup and a few sensible macOS settings.
+- **Safe to run, safe to re-run.** It shows the full plan and asks before changing anything,
+  skips apps you already have (even ones you didn't install with Homebrew), and backs up settings.
+- **Verifiable, not just "trust me".** This repository is the exact code that runs on your Mac,
+  and you can prove the script you downloaded matches it (see below).
+
+## How it works
+
+1. Go to **[initmac.in](https://initmac.in)**, answer two quick questions.
+2. Review the recommended apps and tick what you want.
+3. Copy the command into Terminal, read the plan, type `y`.
+
+Already set up a Mac you love? Share it as a link, or let InitMac save your app list privately
+(opt-in) and recreate it on your next Mac.
 
 ## What the installer does
 

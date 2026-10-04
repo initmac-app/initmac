@@ -37,6 +37,7 @@ ALLOWED_TAPS = {"hashicorp/tap"}
 ALLOWED_URL_PREFIXES = (
     "https://raw.githubusercontent.com/Homebrew/",
     "https://github.com/settings/",
+    "https://github.com/initmac-app/initmac",
     "http://127.0.0.1",
     "http://localhost",
 )
@@ -189,10 +190,13 @@ class Sandbox:
 
     def _fake_subprocess(self):
         record = self.commands.append
+        installed = {"git", "slack"}  # what the fake Homebrew reports as installed
 
         class Popen:
             def __init__(self, cmd, **kw):
                 record(list(cmd))
+                if cmd[1:2] == ["install"]:  # remember installs, like real Homebrew
+                    installed.update(a.split("/")[-1] for a in cmd[2:] if not a.startswith("--"))
                 self.stdout = iter([])
 
             def wait(self):
@@ -204,7 +208,7 @@ class Sandbox:
 
         def run(cmd, **kw):
             record(list(cmd))
-            out = "git\nslack\n" if cmd[-2:] in (["--formula", "-1"], ["--cask", "-1"]) else ""
+            out = "\n".join(sorted(installed)) if cmd[-2:] in (["--formula", "-1"], ["--cask", "-1"]) else ""
             if cmd[1:4] == ["info", "--json=v2", "--cask"]:
                 out = json.dumps({"casks": [
                     {"token": t, "artifacts": [{"app": [t.replace("-", " ").title() + ".app"]}]} for t in cmd[4:]
@@ -327,6 +331,13 @@ def test_plan_lists_every_change_and_the_promises(sandbox, capsys):
     assert "Here's what InitMac will do" in out
     assert "It will NOT:" in out and "Delete or overwrite any of your files" in out
     assert "Change 9 macOS settings" in out
+    assert "star on GitHub" not in out  # never on a dry run
+
+
+def test_star_request_only_after_a_successful_install(sandbox, capsys):
+    sandbox.run("--yes")
+    out = capsys.readouterr().out
+    assert out.count("A star on GitHub helps others find it") == 1
 
 
 def test_apps_installed_outside_homebrew_are_left_alone(sandbox, capsys):
