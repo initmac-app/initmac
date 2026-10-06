@@ -91,6 +91,10 @@
    "description": "User-friendly command-line HTTP client for testing APIs and web services.",
    "why": "Colorized terminal output, JSON support, and simpler syntax than curl for API debugging.",
    "audiences": ["role_dev", "act_code"], "alternatives": ["curl"], "homepage": "https://httpie.io"},
+  {"id": "starship", "name": "Starship", "brew": "starship", "type": "formula", "category": "dev", "core": false,
+   "description": "Fast, customizable prompt for any shell showing git status and environment versions.",
+   "why": "Provides immediate context about your repository and tool versions; requires one eval line in ~/.zshrc.",
+   "audiences": ["role_dev", "act_code"], "alternatives": ["Oh My Zsh"], "homepage": "https://starship.rs"},
 
   {"id": "google-chrome", "name": "Google Chrome", "brew": "google-chrome", "type": "cask", "category": "comms", "core": true,
    "description": "Google's web browser.",
