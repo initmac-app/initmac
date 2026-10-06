@@ -39,6 +39,22 @@ Pick the apps you need (each with a plain-English explanation), then install the
 Already set up a Mac you love? Share it as a link, or let InitMac save your app list privately
 (opt-in) and recreate it on your next Mac.
 
+## Mac checkup
+
+A free, read-only health report you can run any time:
+
+```bash
+bash <(curl -fsSL https://initmac.in/checkup.sh)
+```
+
+It reports free space (and which caches are big), battery health, FileVault / firewall /
+Gatekeeper / SIP / Time Machine, pending macOS and Homebrew updates, background startup items
+and memory pressure. Then it suggests fixes and asks about each one. It never deletes your files:
+for big folders it opens them in Finder, and for security settings it opens the right System
+Settings page. The only commands it can run are `brew cleanup`, `brew upgrade <your outdated
+apps>` and `open`, and only after you type `y`. Source: [`installer/checkup.py`](installer/checkup.py),
+held to the same sandbox tests as the installer.
+
 ## What the installer does
 
 When you run your InitMac command, it:

@@ -48,6 +48,16 @@ def verify(script_text, local_root=None):
         tree = ast.parse(script_text)
     except SyntaxError as e:
         return [f"not valid Python: {e}"], commit
+
+    # The checkup has no per-user CONFIG: it must equal installer/checkup.py exactly.
+    if "InitMac checkup" in (ast.get_docstring(tree) or ""):
+        public = fetch(commit, "installer/checkup.py", local_root)
+        ours = "\n".join(lines[:1] + lines[2:])
+        if ours != public:
+            diff = difflib.unified_diff(public.splitlines(), ours.splitlines(), "public checkup", "your script",
+                                        lineterm="", n=1)
+            return ["code differs from the public checkup:\n" + "\n".join(list(diff)[:60])], commit
+        return [], commit
     assigns = [n for n in tree.body if isinstance(n, ast.Assign)
                and any(isinstance(t, ast.Name) and t.id == "CONFIG" for t in n.targets)]
     if len(assigns) != 1:
@@ -96,7 +106,7 @@ def main():
             print("  - " + p)
         sys.exit(1)
     print(f"✓ Verified: matches github.com/initmac-app/initmac @ {commit}")
-    print("  The code is the public template; CONFIG only contains public catalog entries.")
+    print("  It's exactly the public code (plus, for installers, only public catalog entries).")
 
 
 if __name__ == "__main__":

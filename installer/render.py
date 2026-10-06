@@ -15,6 +15,7 @@ from catalog.validate import apps_by_id, tweaks_by_id
 
 HERE = Path(__file__).resolve().parent
 TEMPLATE = HERE / "install_template.py"
+CHECKUP = HERE / "checkup.py"
 LAUNCHER = HERE / "launcher.sh.tmpl"
 PLACEHOLDER = "CONFIG = __CONFIG__"
 REPO_URL = "https://github.com/initmac-app/initmac"
@@ -71,6 +72,16 @@ def render_installer(selection: dict, selection_id: str = "", server: str = "", 
     # Line 2: where to find the exact source of everything but the CONFIG block.
     shebang, rest = script.split("\n", 1)
     return f"{shebang}\n{SOURCE_PREFIX}{REPO_URL} @ {commit or source_commit()}\n{rest}"
+
+
+def _stamp(script: str, commit: str | None) -> str:
+    shebang, rest = script.split("\n", 1)
+    return f"{shebang}\n{SOURCE_PREFIX}{REPO_URL} @ {commit or source_commit()}\n{rest}"
+
+
+def render_checkup(commit: str | None = None) -> str:
+    """The checkup is the same for everyone: the public file plus the Source line."""
+    return _stamp(CHECKUP.read_text(encoding="utf-8"), commit)
 
 
 def render_launcher(script_url: str, sha256: str) -> str:

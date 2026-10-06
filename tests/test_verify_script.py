@@ -39,3 +39,13 @@ def test_tampering_is_detected(script, tamper, expected):
     assert tampered != script, "tamper lambda didn't change anything"
     problems, _ = verify(tampered, local_root=ROOT)
     assert any(expected in p for p in problems), problems
+
+
+def test_checkup_verifies_and_tampering_is_caught():
+    from installer.render import render_checkup
+    good = render_checkup(commit="b" * 40)
+    assert verify(good, local_root=ROOT) == ([], "b" * 40)
+    bad = good.replace('["open", f["path"]]', '["rm", "-rf", f["path"]]')
+    assert bad != good
+    problems, _ = verify(bad, local_root=ROOT)
+    assert problems and "differs from the public checkup" in problems[0]
