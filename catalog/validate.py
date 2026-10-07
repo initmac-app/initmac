@@ -21,6 +21,7 @@ def _load(name: str):
 
 def validate(apps: list[dict], questionnaire: dict, tweaks: list[dict]) -> None:
     category_ids = {c["id"] for c in questionnaire["categories"]}
+    groups = {c["id"]: {g["id"] for g in c.get("groups", [])} for c in questionnaire["categories"]}
     option_ids = {o["id"] for o in questionnaire["roles"] + questionnaire["activities"]}
 
     seen: set[str] = set()
@@ -36,6 +37,10 @@ def validate(apps: list[dict], questionnaire: dict, tweaks: list[dict]) -> None:
             raise CatalogError(f"{aid}: type must be one of {APP_TYPES}")
         if app["category"] not in category_ids:
             raise CatalogError(f"{aid}: unknown category {app['category']!r}")
+        if groups[app["category"]] and app.get("group") not in groups[app["category"]]:
+            raise CatalogError(f"{aid}: group must be one of {sorted(groups[app['category']])}")
+        if not groups[app["category"]] and "group" in app:
+            raise CatalogError(f"{aid}: category {app['category']!r} has no groups")
         unknown = set(app["audiences"]) - option_ids
         if unknown:
             raise CatalogError(f"{aid}: unknown audiences {sorted(unknown)}")

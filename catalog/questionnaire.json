@@ -1,10 +1,13 @@
 {
   "categories": [
     {"id": "dev", "name": "Dev tools", "description": "Editors, terminals, containers and the command-line basics for writing software."},
+    {"id": "ai", "name": "AI & agents", "description": "Coding agents, AI assistants and everything you need to run open-weight models on your Mac.",
+     "groups": [{"id": "agents", "name": "Coding agents"}, {"id": "assistants", "name": "AI editors & assistants"},
+                {"id": "local", "name": "Open-weight models on your Mac"}]},
     {"id": "comms", "name": "Browsers & comms", "description": "Web browsers plus chat and video-call apps."},
     {"id": "productivity", "name": "Productivity & utils", "description": "Small utilities that make macOS nicer every day: window snapping, launcher, passwords, notes."},
     {"id": "cloud", "name": "Cloud & data CLIs", "description": "Command-line tools for AWS, GCP, Azure, Kubernetes, Terraform and databases."},
-    {"id": "data", "name": "Data & ML", "description": "Python environments, notebooks, local databases and local LLMs."},
+    {"id": "data", "name": "Data & ML", "description": "Python environments, notebooks, local databases and database apps."},
     {"id": "design", "name": "Design & media", "description": "Design, image editing, 3D, screen recording and video tools."}
   ],
   "roles": [
@@ -15,6 +18,7 @@
   ],
   "activities": [
     {"id": "act_code", "label": "Writing code", "weight": 3},
+    {"id": "act_ai", "label": "AI agents & local models", "weight": 3},
     {"id": "act_data", "label": "Working with data & notebooks", "weight": 3},
     {"id": "act_infra", "label": "Managing cloud infra & containers", "weight": 3},
     {"id": "act_calls", "label": "Video calls & team chat", "weight": 3},

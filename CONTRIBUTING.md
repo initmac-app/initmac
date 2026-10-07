@@ -19,6 +19,8 @@ Edit `catalog/catalog.json`. Each entry looks like:
 - `description`: what it is, in one sentence. `why`: why someone would want it.
 - `audiences`: roles/activities from `catalog/questionnaire.json` it's useful for.
 - `core`: `true` only if it's the obvious default pick for those audiences (it gets pre-selected).
+- `group`: only for categories that have groups in `catalog/questionnaire.json` (e.g. `ai`:
+  `agents`, `assistants` or `local`).
 - `homepage`: must be `https://`.
 
 Before opening a pull request:

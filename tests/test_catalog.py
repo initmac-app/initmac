@@ -26,6 +26,8 @@ def test_every_category_has_a_core_app():
         (lambda apps: apps[0].update(category="nope"), "category"),
         (lambda apps: apps[0].update(audiences=["role_astronaut"]), "audiences"),
         (lambda apps: apps[0].update(why=""), "why"),
+        (lambda apps: apps[0].update(group="agents"), "has no groups"),
+        (lambda apps: next(a for a in apps if a["category"] == "ai").update(group="nope"), "group must be"),
     ],
 )
 def test_validate_rejects_bad_apps(mutate, message):
