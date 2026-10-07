@@ -216,10 +216,10 @@ def assert_home_files_allowed(files):
 
 
 def test_full_install_only_does_allowed_things(sandbox):
-    sandbox.run("--yes")
+    sandbox.run("--yes", "--no-sync")
     assert_commands_allowed(sandbox.commands)
     assert_home_files_allowed(sandbox.files_under_home())
-    assert sandbox.requests == []  # no network without opting in to sync
+    assert sandbox.requests == []  # --no-sync: no network at all
     installed = [c for c in sandbox.commands if c[1:2] == ["install"]]
     assert installed, "expected brew install calls"
     # Nothing is tapped in the sandbox, so the trusted third-party tap is added before installing.
@@ -232,7 +232,7 @@ def test_dry_run_changes_nothing(sandbox):
     def is_read(c):
         exe = os.path.basename(c[0])
         return (
-            (exe == "brew" and (c[1] in ("list", "info") or c == [c[0], "tap"]))
+            (exe == "brew" and (c[1] in ("list", "info", "leaves") or c == [c[0], "tap"]))
             or c[:2] in (["defaults", "read"], ["xcode-select", "-p"])
             or (exe == "git" and len(c) == 4)  # `git config --global user.name` reads the value
         )
@@ -250,7 +250,7 @@ def test_sync_sends_only_name_and_package_names(sandbox):
         ("PUT", f"{SERVER}/api/devices/dev123"),
     ]
     body = sandbox.requests[1][2]
-    assert set(body) == {"name", "formulae", "casks"} and body["name"] == "My Mac"
+    assert set(body) == {"name", "formulae", "casks"} and body["name"] == "dev123"  # the device ID by default
     device_file = sandbox.home / ".initmac" / "device.json"
     assert oct(device_file.stat().st_mode & 0o777) == "0o600"
     assert_home_files_allowed(sandbox.files_under_home())
@@ -258,6 +258,18 @@ def test_sync_sends_only_name_and_package_names(sandbox):
     sandbox.run("--forget-device", "--yes")
     assert sandbox.requests[-1][:2] == ("DELETE", f"{SERVER}/api/devices/dev123")
     assert not device_file.exists()
+
+
+def test_install_saves_app_list_by_default(sandbox, capsys):
+    sandbox.run("--yes")
+    assert [(m, u) for m, u, _ in sandbox.requests] == [
+        ("POST", f"{SERVER}/api/devices"),
+        ("PUT", f"{SERVER}/api/devices/dev123"),
+    ]
+    assert set(sandbox.requests[1][2]) == {"name", "formulae", "casks"}
+    assert_home_files_allowed(sandbox.files_under_home())
+    out = capsys.readouterr().out
+    assert "Save this Mac's app list (Homebrew package names only)" in out and "--no-sync" in out
 
 
 def test_restore_defaults_only_touches_defaults(sandbox):
@@ -275,6 +287,7 @@ def test_plan_lists_every_change_and_the_promises(sandbox, capsys):
     assert "Here's what InitMac will do" in out
     assert "It will NOT:" in out and "Delete or overwrite any of your files" in out
     assert "Change 9 macOS settings" in out
+    assert "Send anything except that app list" in out
     assert "star on GitHub" not in out  # never on a dry run
 
 

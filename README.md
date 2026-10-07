@@ -37,7 +37,7 @@ Pick the apps you need (each with a plain-English explanation), then install the
 3. Copy the command into Terminal, read the plan, type `y`.
 
 Already set up a Mac you love? Share it as a link, or let InitMac save your app list privately
-(opt-in) and recreate it on your next Mac.
+(the installer offers this at the end; skip it with `--no-sync`) and recreate it on your next Mac.
 
 ## Mac checkup
 
@@ -65,10 +65,11 @@ When you run your InitMac command, it:
    you installed yourself from the vendor's website (those are left exactly as they are).
 4. Optionally sets your Git name/email and creates an SSH key (only if you don't have one).
 5. Optionally applies the macOS settings you ticked, after backing up your originals.
-6. Optionally (only if you say yes) saves your app list to a private page on initmac.in.
+6. Offers to save your app list (Homebrew package names only) to a private page on initmac.in.
+   Pressing Enter saves it; type `n` or run with `--no-sync` to skip.
 
-**It never** deletes or overwrites your files, runs `sudo` itself, or sends data anywhere
-unless you opt in to sync. Undo options: `--restore-defaults`, `--forget-device`,
+**It never** deletes or overwrites your files, runs `sudo` itself, or sends anything except
+that app list. Undo options: `--restore-defaults`, `--forget-device`,
 `brew uninstall <name>`.
 
 ## How that's enforced, not just promised

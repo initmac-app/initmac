@@ -6,14 +6,16 @@ key and a few macOS defaults. It shows you the full plan and asks before changin
 anything. Safe to re-run: anything already done is skipped.
 
 What it will never do: delete your files, run sudo itself (Homebrew may ask for your
-password for some apps), or send data anywhere unless you opt in to syncing your app list.
+password for some apps), or send anything except your app list (Homebrew package names),
+which it offers to save to a private InitMac page at the end (say no, or use --no-sync).
 
 Usage:
     python3 install.py                     # show the plan, ask, then run
     python3 install.py --dry-run           # print what would happen, change nothing
     python3 install.py --yes               # don't ask questions, use the values from the website
     python3 install.py --restore-defaults  # undo the macOS settings changes
-    python3 install.py --sync              # save this Mac's app list to InitMac (opt-in)
+    python3 install.py --no-sync           # install, but don't save this Mac's app list
+    python3 install.py --sync              # only save this Mac's app list to InitMac
     python3 install.py --forget-device     # delete that saved list from InitMac and this Mac
 
 Only uses the Python standard library so it runs on a brand-new Mac.
@@ -49,8 +51,9 @@ APPLICATION_DIRS = [Path("/Applications"), HOME / "Applications"]
 
 
 class Installer:
-    def __init__(self, dry_run, assume_yes):
+    def __init__(self, dry_run, assume_yes, no_sync=False):
         self.dry_run = dry_run
+        self.no_sync = no_sync
         self.interactive = sys.stdin.isatty() and not assume_yes
         LOG_DIR.mkdir(exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -96,10 +99,14 @@ class Installer:
 
     def _input(self, prompt):
         try:
-            return input(prompt).strip()
+            answer = input(prompt).strip()
         except EOFError:  # Ctrl-D / closed input: treat as no answer
             print()
-            return ""
+            answer = ""
+        # Keep a record of every question and answer, so it's clear later what was agreed to.
+        self.log_file.write("%s%s\n" % (prompt, answer))
+        self.log_file.flush()
+        return answer
 
     def ask(self, question, default=""):
         if not self.interactive:
@@ -165,12 +172,19 @@ class Installer:
                         % (_count(len(tweaks), "macOS setting"), ", ".join(t["label"] for t in tweaks)))
             if restart:
                 will.append("Restart %s so the settings take effect" % " and ".join(restart))
+        if self.will_offer_sync():
+            will.append("Save this Mac's app list (Homebrew package names only) to a private InitMac page"
+                        " - you'll be asked at the end; skip with --no-sync")
         wont = [
             "Delete or overwrite any of your files",
             "Run sudo itself (Homebrew may ask for your password for some apps)",
-            "Send any data anywhere, unless you choose to sync your app list at the end",
+            "Send anything except that app list: no hardware IDs, usernames or files"
+            if self.will_offer_sync() else "Send any data anywhere",
         ]
         return will, wont
+
+    def will_offer_sync(self):
+        return bool(CONFIG.get("server")) and not self.no_sync
 
     def confirm_plan(self):
         will, wont = self.plan_lines()
@@ -505,17 +519,19 @@ class Installer:
                           or self.output([brew, "list", "--formula", "-1"]).split())
         casks = sorted(self.output([brew, "list", "--cask", "-1"]).split())
         device = self._load_device()
-        name = self.ask("Name to show for this Mac", (device or {}).get("name") or "My Mac")[:60]
-        self.log("Sending only: the name %r and %d Homebrew package names (%d formulae, %d casks)."
-                 % (name, len(formulae) + len(casks), len(formulae), len(casks)))
-        self.log("No hardware IDs, usernames, file paths or anything else.")
         if self.dry_run:
-            self.log("[dry-run] would send that to %s" % CONFIG.get("server"))
+            self.log("[dry-run] would send a name for this Mac (its InitMac ID unless you type one) and"
+                     " %d Homebrew package names to %s" % (len(formulae) + len(casks), CONFIG.get("server")))
             return
+        self.log("Sending only: a name for this Mac and %d Homebrew package names (%d formulae, %d casks)."
+                 % (len(formulae) + len(casks), len(formulae), len(casks)))
+        self.log("No hardware IDs, usernames, file paths or anything else.")
         try:
             if not device:
                 created = self._api("POST", "/api/devices")
                 device = {"id": created["id"], "secret": created["secret"], "url": created["url"]}
+            # Defaults to this Mac's InitMac ID; type a name of your own to show that instead.
+            name = self.ask("Name to show for this Mac", device.get("name") or device["id"])[:60]
             device["name"] = name
             DEVICE_FILE.parent.mkdir(mode=0o700, exist_ok=True)
             DEVICE_FILE.write_text(json.dumps(device))
@@ -598,11 +614,12 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="show what would happen without changing anything")
     parser.add_argument("--yes", "-y", action="store_true", help="never prompt; use the values chosen on the website")
     parser.add_argument("--restore-defaults", action="store_true", help="undo macOS defaults changes made by this script")
-    parser.add_argument("--sync", action="store_true", help="only save this Mac's app list to InitMac (opt-in)")
+    parser.add_argument("--sync", action="store_true", help="only save this Mac's app list to InitMac")
+    parser.add_argument("--no-sync", action="store_true", help="don't offer to save this Mac's app list at the end")
     parser.add_argument("--forget-device", action="store_true", help="delete this Mac's saved app list from InitMac")
     args = parser.parse_args()
 
-    inst = Installer(dry_run=args.dry_run, assume_yes=args.yes)
+    inst = Installer(dry_run=args.dry_run, assume_yes=args.yes, no_sync=args.no_sync)
     inst.check_platform()
     if args.restore_defaults:
         inst.restore_defaults()
@@ -623,8 +640,8 @@ def main():
     inst.git_and_ssh()
     inst.macos_defaults()
     inst.summary()
-    if inst.interactive and CONFIG.get("server") and inst.confirm(
-        "Save this Mac's app list to InitMac so you can see it or copy it to another Mac?"
+    if inst.will_offer_sync() and inst.confirm(
+        "Save this Mac's app list to a private InitMac page, to see it or copy it to another Mac?", default=True
     ):
         inst.sync_device()
     sys.exit(1 if inst.result["failed"] else 0)
