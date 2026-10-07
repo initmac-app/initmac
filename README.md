@@ -5,6 +5,7 @@ Pick the apps you need (each with a plain-English explanation), then install the
 
 <p align="center">
   <a href="https://initmac.in"><b>initmac.in</b></a> ·
+  <a href="https://initmac.in/ai">AI on your Mac</a> ·
   <a href="#verify-the-script-you-downloaded">Verify a script</a> ·
   <a href="CONTRIBUTING.md">Suggest an app</a>
 </p>
@@ -21,7 +22,7 @@ Pick the apps you need (each with a plain-English explanation), then install the
 ## Why InitMac
 
 - **Decide faster.** Tell it your role and what you do day to day; it recommends from a curated
-  catalog of 66 apps (Raycast, Rectangle, OrbStack, VS Code, 1Password, Obsidian…) and explains
+  catalog of 84 apps (Raycast, Rectangle, OrbStack, VS Code, 1Password, Obsidian…) and explains
   each one, so you're not googling "best Mac terminal" at midnight.
 - **One command.** `bash <(curl -fsSL https://initmac.in/i/<id>/run.sh)` installs everything with
   [Homebrew](https://brew.sh), plus optional Git/SSH setup and a few sensible macOS settings.
@@ -38,6 +39,28 @@ Pick the apps you need (each with a plain-English explanation), then install the
 
 Already set up a Mac you love? Share it as a link, or let InitMac save your app list privately
 (the installer offers this at the end; skip it with `--no-sync`) and recreate it on your next Mac.
+
+## AI on your Mac
+
+**[initmac.in/ai](https://initmac.in/ai)**: pick a kit and get one command.
+
+- **Agentic coding:** Claude Code, Codex, Gemini CLI and Cursor (more agents, such as OpenCode, Aider,
+  Cline and Qwen Code, at [initmac.in/apps/ai](https://initmac.in/apps/ai)).
+- **Local models:** Ollama, LM Studio and the Hugging Face CLI (plus llama.cpp, MLX-LM, Jan, Msty, LLM).
+
+At the end, the installer reads your Mac's memory and shows which open-weight models fit:
+
+```
+Open-weight models on this Mac (48 GB memory):
+       8 GB+  small 1-4B models (e.g. qwen3:4b, gemma3:4b)
+      16 GB+  7-14B models (e.g. qwen3:8b, qwen3:14b)
+  ->  32 GB+  up to ~32B models (e.g. qwen3:32b, gemma3:27b)
+      64 GB+  70B-class models (e.g. llama3.3:70b) and everything smaller
+A good first model for this Mac: qwen3:14b (about 9 GB to download).
+```
+
+It offers to download that one starter model with Ollama (default No), then prints the command to
+start each agent. It never asks for API keys or accounts: each tool signs you in itself.
 
 ## Mac checkup
 
