@@ -1,6 +1,7 @@
 """Loads and validates the catalog JSON files that live next to this module."""
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -39,6 +40,8 @@ def validate(apps: list[dict], questionnaire: dict, tweaks: list[dict]) -> None:
             raise CatalogError(f"{aid}: unknown category {app['category']!r}")
         if groups[app["category"]] and app.get("group") not in groups[app["category"]]:
             raise CatalogError(f"{aid}: group must be one of {sorted(groups[app['category']])}")
+        if "try" in app and not re.fullmatch(r"[a-z][a-z0-9 .:-]*", app["try"]):
+            raise CatalogError(f"{aid}: try must be a plain command like 'claude'")
         if not groups[app["category"]] and "group" in app:
             raise CatalogError(f"{aid}: category {app['category']!r} has no groups")
         unknown = set(app["audiences"]) - option_ids

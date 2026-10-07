@@ -48,7 +48,7 @@ def build_config(selection: dict, selection_id: str = "", server: str = "") -> d
         "created_at": selection.get("created_at", ""),
         "server": server,
         "apps": [
-            {k: apps[i][k] for k in ("id", "name", "brew", "type")}
+            {k: apps[i][k] for k in ("id", "name", "brew", "type", "group", "try") if k in apps[i]}
             for i in selection.get("apps", [])
             if i in apps
         ],

@@ -48,6 +48,14 @@ HOMEBREW_INSTALL = "https://raw.githubusercontent.com/Homebrew/install/HEAD/inst
 RESTARTABLE = ("Dock", "Finder", "SystemUIServer")
 REPO_URL = "https://github.com/initmac-app/initmac"
 APPLICATION_DIRS = [Path("/Applications"), HOME / "Applications"]
+# Which open-weight models fit in memory (GB of RAM -> what runs comfortably), and the one
+# Ollama starter model offered for each tier with its approximate download size.
+MODEL_TIERS = [
+    (64, "70B-class models (e.g. llama3.3:70b) and everything smaller", "qwen3:32b", "20 GB"),
+    (32, "up to ~32B models (e.g. qwen3:32b, gemma3:27b)", "qwen3:14b", "9 GB"),
+    (16, "7-14B models (e.g. qwen3:8b, qwen3:14b)", "qwen3:8b", "5 GB"),
+    (0, "small 1-4B models (e.g. qwen3:4b, gemma3:4b)", "qwen3:4b", "2.5 GB"),
+]
 
 
 class Installer:
@@ -172,6 +180,11 @@ class Installer:
                         % (_count(len(tweaks), "macOS setting"), ", ".join(t["label"] for t in tweaks)))
             if restart:
                 will.append("Restart %s so the settings take effect" % " and ".join(restart))
+        if any(a.get("group") == "local" for a in apps):
+            will.append("Show which open-weight models fit this Mac's memory")
+            if any(a["brew"] == "ollama" for a in apps):
+                will.append("Offer (default No) to start Ollama in the background, which also starts it at login,"
+                            " and download one starter model sized for this Mac")
         if self.will_offer_sync():
             will.append("Save this Mac's app list (Homebrew package names only) to a private InitMac page"
                         " - you'll be asked at the end; skip with --no-sync")
@@ -573,6 +586,58 @@ class Installer:
         DEVICE_FILE.unlink()  # only InitMac's own sync file
         self.log("Deleted this Mac's saved app list from InitMac and from %s." % DEVICE_FILE)
 
+    def ai_tools(self):
+        apps = CONFIG["apps"]
+        tries = [a for a in apps if a.get("try") and a["id"] in self.result["installed"] + self.result["skipped"]]
+        local = [a for a in apps if a.get("group") == "local"]
+        if not tries and not local:
+            return
+        self.section("AI tools")
+        if local:
+            self.local_models(any(a["brew"] == "ollama" for a in apps))
+        if tries:
+            self.log("")
+            self.log("Try your coding agents: open a project folder in Terminal and run")
+            for a in tries:
+                self.log("  %-12s # %s" % (a["try"], a["name"]))
+            self.log("Each one asks you to sign in the first time; InitMac never sees your accounts or keys.")
+
+    def local_models(self, has_ollama):
+        gb = round(os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") / 2 ** 30)
+        tier = next(t for t in MODEL_TIERS if gb >= t[0])
+        apple_silicon = platform.machine() == "arm64"
+        self.log("Open-weight models on this Mac (%d GB memory%s):" % (
+            gb, "" if apple_silicon else ", Intel chip: expect local models to be slow"))
+        for t in reversed(MODEL_TIERS):
+            self.log("  %s %3s GB+  %s" % ("->" if t is tier else "  ", t[0] or 8, t[1]))
+        model, size = tier[2], tier[3]
+        self.log("A good first model for this Mac: %s (about %s to download)." % (model, size))
+        if not has_ollama:
+            self.log("Add Ollama next time to run it with one command.")
+            return
+        ollama = str(Path(self.brew() or "/opt/homebrew/bin/brew").parent / "ollama")
+        self.log("")
+        if not self.dry_run and not Path(ollama).exists():
+            self.log("Ollama didn't install, so skipping the starter model.")
+            return
+        if not self.confirm("Start Ollama in the background (it will also start at login) and download"
+                            " %s now, about %s?" % (model, size)):
+            self.log("Skipped. Later: brew services start ollama && ollama run %s" % model)
+            return
+        self.run([self.brew() or "brew", "services", "start", "ollama"])
+        if self.dry_run:
+            self.run([ollama, "pull", model])
+            return
+        for _ in range(30):  # the server takes a moment to start
+            if subprocess.run([ollama, "list"], capture_output=True, check=False).returncode == 0:
+                break
+            time.sleep(1)
+        if self.run([ollama, "pull", model], interactive=True) == 0:
+            self.result["steps"]["model"] = model
+            self.log("Ready. Chat with it: ollama run %s   (stop Ollama: brew services stop ollama)" % model)
+        else:
+            self.log("The download didn't finish. Retry with: ollama pull %s" % model)
+
     def summary(self):
         names = {a["id"]: a["name"] for a in CONFIG["apps"]}
         r = self.result
@@ -639,6 +704,7 @@ def main():
     inst.install_apps()
     inst.git_and_ssh()
     inst.macos_defaults()
+    inst.ai_tools()
     inst.summary()
     if inst.will_offer_sync() and inst.confirm(
         "Save this Mac's app list to a private InitMac page, to see it or copy it to another Mac?", default=True

@@ -27,8 +27,9 @@ from safety import ALLOWED_URL_PREFIXES, static_violations  # noqa: F401
 
 SERVER = "https://initmac.test"
 
-ALLOWED_COMMANDS = {"brew", "git", "ssh-keygen", "ssh-add", "defaults", "killall", "xcode-select", "pbcopy", "gh", "bash"}
-ALLOWED_BREW_SUBCOMMANDS = {"list", "leaves", "info", "update", "tap", "install"}
+ALLOWED_COMMANDS = {"brew", "git", "ssh-keygen", "ssh-add", "defaults", "killall", "xcode-select", "pbcopy", "gh", "bash",
+                    "ollama"}
+ALLOWED_BREW_SUBCOMMANDS = {"list", "leaves", "info", "update", "tap", "install", "services"}
 ALLOWED_KILLALL = {"Dock", "Finder", "SystemUIServer"}
 ALLOWED_DEFAULTS_DOMAINS = {
     "com.apple.dock", "NSGlobalDomain", "com.apple.finder", "com.apple.screencapture",
@@ -200,6 +201,10 @@ def assert_commands_allowed(commands):
             assert cmd[1] in ALLOWED_BREW_SUBCOMMANDS, joined
             if cmd[1] == "tap" and len(cmd) > 2:  # bare `brew tap` just lists taps
                 assert cmd[2] in ALLOWED_TAPS, joined
+        if exe == "brew" and cmd[1] == "services":
+            assert cmd[2:] == ["start", "ollama"], joined
+        if exe == "ollama":
+            assert cmd[1] == "list" or (cmd[1] == "pull" and cmd[2] in STARTER_MODELS), joined
         if exe == "killall":
             assert cmd[1:] and set(cmd[1:]) <= ALLOWED_KILLALL, joined
         if exe == "defaults":
@@ -208,6 +213,9 @@ def assert_commands_allowed(commands):
             assert "raw.githubusercontent.com/Homebrew/install" in joined, joined
         if exe == "git":
             assert cmd[1:3] == ["config", "--global"], joined
+
+
+STARTER_MODELS = {"qwen3:4b", "qwen3:8b", "qwen3:14b", "qwen3:32b"}
 
 
 def assert_home_files_allowed(files):
@@ -306,3 +314,23 @@ def test_apps_installed_outside_homebrew_are_left_alone(sandbox, capsys):
     assert "already installed: Google Chrome (installed outside Homebrew (Google Chrome.app))" in out
     assert "Skip 3 apps you already have: Git, Slack, Google Chrome" in out
     assert (sandbox.applications / "Google Chrome.app").is_dir()  # untouched
+
+
+def test_ai_guide_never_downloads_a_model_without_a_yes(sandbox, capsys):
+    sandbox.run("--yes", "--no-sync")
+    out = capsys.readouterr().out
+    assert "Open-weight models on this Mac" in out and "->" in out
+    assert "claude" in out and "Try your coding agents" in out
+    assert not [c for c in sandbox.commands if os.path.basename(c[0]) == "ollama" or c[1:2] == ["services"]]
+
+
+def test_starter_model_download_only_runs_allowed_commands(sandbox, monkeypatch):
+    brew_bin = Path(sandbox.mod.BREW_PREFIXES[0]) / "bin"
+    (brew_bin / "ollama").write_text("#!/bin/sh\n")
+    monkeypatch.setattr(sandbox.mod.Installer, "confirm", lambda self, q, default=False: "download" in q)
+    sandbox.run("--yes", "--no-sync")
+    assert_commands_allowed(sandbox.commands)
+    assert [c[1:] for c in sandbox.commands if c[1:2] == ["services"]] == [["services", "start", "ollama"]]
+    pulls = [c for c in sandbox.commands if os.path.basename(c[0]) == "ollama" and c[1] == "pull"]
+    assert len(pulls) == 1 and pulls[0][2] in STARTER_MODELS
+    assert_home_files_allowed(sandbox.files_under_home())
