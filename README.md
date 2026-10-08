@@ -147,3 +147,7 @@ Security issues: please follow [SECURITY.md](SECURITY.md) instead of opening a p
 ## License
 
 MIT. The initmac.in website itself (wizard, share links, sync service) is a separate, private codebase.
+
+Mac and macOS are trademarks of Apple Inc., registered in the U.S. and other countries. InitMac is an
+independent project and is not affiliated with, sponsored or endorsed by Apple Inc. Other product
+names in the catalog are trademarks of their respective owners.
