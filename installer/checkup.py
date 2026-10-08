@@ -37,10 +37,11 @@ LOW_SPACE_FRACTION = 0.15          # warn when less than 15% of the disk is free
 BIG_FOLDER_BYTES = 1 * 1024 ** 3   # offer to open folders bigger than 1 GB
 BIG_BREW_CACHE_BYTES = 500 * 1024 ** 2
 SIZE_TIME_LIMIT = 20               # seconds spent measuring each folder at most
+# System Settings pages (macOS 13+ names; on macOS 26 the firewall lives under Network).
 SETTINGS = {
-    "firewall": "x-apple.systempreferences:com.apple.preference.security?Firewall",
-    "filevault": "x-apple.systempreferences:com.apple.preference.security?FileVault",
-    "backup": "x-apple.systempreferences:com.apple.prefs.backup",
+    "firewall": "x-apple.systempreferences:com.apple.Network-Settings.extension?Firewall",
+    "filevault": "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?FileVault",
+    "backup": "x-apple.systempreferences:com.apple.Time-Machine-Settings.extension",
     "updates": "x-apple.systempreferences:com.apple.Software-Update-Settings.extension",
 }
 OK, WARN = "✓", "⚠"
@@ -276,7 +277,8 @@ class Checkup:
                                            for k, name in labels))
         if not sec["firewall"]:
             self.fixes.append(("Open Firewall settings?", "The firewall blocks unwanted incoming connections. "
-                               "Turning it on needs your password, so InitMac just opens the page.",
+                               "Turning it on needs your password, so InitMac just opens the page "
+                               "(System Settings → Network → Firewall).",
                                ["open", SETTINGS["firewall"]]))
         if not sec["filevault"]:
             self.fixes.append(("Open FileVault settings?", "FileVault encrypts your disk so a lost Mac doesn't expose "
