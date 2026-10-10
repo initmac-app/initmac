@@ -91,6 +91,11 @@
    "description": "Fast, customizable prompt for any shell showing git status and environment versions.",
    "why": "Provides immediate context about your repository and tool versions; requires one eval line in ~/.zshrc.",
    "audiences": ["role_dev", "act_code"], "alternatives": ["Oh My Zsh"], "homepage": "https://starship.rs"},
+  {"id": "ruff", "name": "Ruff", "brew": "ruff", "type": "formula", "category": "dev", "core": false,
+   "description": "Extremely fast Python linter and code formatter written in Rust.",
+   "why": "Replaces Flake8, Black, isort and Bandit with 10-100x faster execution and drop-in compatibility.",
+   "audiences": ["role_dev", "role_data", "act_code", "act_data"], "alternatives": ["Black", "Flake8"], "homepage": "https://docs.astral.sh/ruff"},
+
 
   {"id": "claude-code", "name": "Claude Code", "brew": "claude-code", "type": "cask", "category": "ai", "group": "agents", "core": true,
    "description": "Anthropic's coding agent: reads your project, edits files and runs commands from the terminal.",
